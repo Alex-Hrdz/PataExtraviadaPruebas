@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "293844282338",
+    "project_id": "pataextraviada-49f83",
+    "storage_bucket": "pataextraviada-49f83.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:293844282338:android:f0d0e89fa12c60a0cda7bb",
+        "android_client_info": {
+          "package_name": "com.example.pataextraviada"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC0KFFzvgnZypeEt0r695Eq0HiPUK7njfc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
