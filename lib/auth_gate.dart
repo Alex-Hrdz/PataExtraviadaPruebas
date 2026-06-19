@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/feed/feed_screen.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
@@ -17,9 +18,7 @@ class AuthGate extends StatelessWidget {
         }
 
         if (snapshot.hasData) {
-          return const Scaffold(
-            body: Center(child: Text('Bienvenido, sesión activa')),
-          );
+          return const FeedScreen();
         }
 
         return const LoginScreen();
