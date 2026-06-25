@@ -10,6 +10,7 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final AuthService _authService = AuthService();
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
@@ -31,10 +32,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _errorMessage = null;
       _successMessage = null;
     });
-
     final error = await _authService.register(
       _emailController.text,
       _passwordController.text,
+      _nameController.text,
     );
 
     setState(() {
@@ -50,6 +51,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -85,6 +87,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 style: TextStyle(color: Colors.grey),
               ),
               const SizedBox(height: 32),
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nombre completo',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.person),
+                ),
+              ),
+              const SizedBox(height: 16),
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
