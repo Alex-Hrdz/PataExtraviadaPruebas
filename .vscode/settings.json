@@ -1,0 +1,7 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "Dart-Code.dart-code",
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  }
+}
