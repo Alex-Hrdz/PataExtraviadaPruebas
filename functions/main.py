@@ -2,7 +2,6 @@ from firebase_functions import https_fn
 from firebase_admin import initialize_app, firestore
 import re
 
-# Inicializa el SDK de administración de Firebase
 initialize_app()
 FirebaseFunctions.instance.useFunctionsEmulator('localhost', 5001)
 
@@ -14,7 +13,6 @@ def sanitizar_texto(texto):
 
 @https_fn.on_call()
 def crear_reporte_seguro(req: https_fn.CallableRequest) -> dict:
-    # 1. Validación de Autenticación (Mitiga Spoofing)
     if req.auth is None:
         raise https_fn.HttpsError(
             code=https_fn.FunctionsErrorCode.UNAUTHENTICATED,
@@ -23,7 +21,6 @@ def crear_reporte_seguro(req: https_fn.CallableRequest) -> dict:
     
     datos = req.data
     
-    # 2. Validación mediante Listas Blancas
     especies_permitidas = ['Perro', 'Gato', 'Ave', 'Conejo', 'Otro']
     tipos_permitidos = ['buscada', 'encontrada']
     
@@ -42,12 +39,10 @@ def crear_reporte_seguro(req: https_fn.CallableRequest) -> dict:
             message="Tipo de reporte no válido."
         )
 
-    # 3. Sanitización de Entradas (Mitiga Tampering / Inyección XSS)
     descripcion_limpia = sanitizar_texto(datos.get('mascota', {}).get('descripcion', ''))
     nombre_limpio = sanitizar_texto(datos.get('mascota', {}).get('nombre', ''))
     localidad_limpia = sanitizar_texto(datos.get('ubicacion', {}).get('localidad', ''))
 
-    # 4. Construcción del objeto seguro (Se usa el UID del token, no del cliente)
     db = firestore.client()
     nuevo_reporte = {
         "usuarioId": req.auth.uid, 
@@ -68,7 +63,6 @@ def crear_reporte_seguro(req: https_fn.CallableRequest) -> dict:
         }
     }
 
-    # 5. Guardado exclusivo en Firestore desde el servidor
     _, doc_ref = db.collection("reportes_mascotas").add(nuevo_reporte)
 
     return {"mensaje": "Reporte limpio y guardado con éxito", "id": doc_ref.id}
