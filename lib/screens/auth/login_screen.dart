@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pataextraviada/utils/app_colors.dart';
+import '../../utils/app_colors.dart';
 import '../../services/auth_service.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
@@ -52,14 +52,14 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.pets, size: 80, color: Color(0xFF4CAF50)),
+              const Icon(Icons.pets, size: 80, color: AppColors.primary),
               const SizedBox(height: 16),
               const Text(
-                'PataExtraviada',
+                'Pets Alert',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF4CAF50),
+                  color: AppColors.primary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -98,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _login,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CAF50),
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                   ),
                   child: _isLoading
@@ -116,7 +116,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   );
                 },
-                child: const Text('¿No tienes cuenta? Regístrate'),
+                child: const Text(
+                  '¿No tienes cuenta? Regístrate',
+                  style: TextStyle(color: AppColors.primary),
+                ),
               ),
               Align(
                 alignment: Alignment.center,
