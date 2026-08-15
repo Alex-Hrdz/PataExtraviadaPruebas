@@ -1,34 +1,90 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../utils/app_colors.dart';
+import '../../services/chat_service.dart';
 
-class ChatRoomScreen extends StatelessWidget {
-  final String userName;
+class ChatRoomScreen extends StatefulWidget {
+  final String receiverId;
+  final String receiverName;
 
-  const ChatRoomScreen({super.key, required this.userName});
+  const ChatRoomScreen({
+    super.key,
+    required this.receiverId,
+    required this.receiverName,
+  });
+
+  @override
+  State<ChatRoomScreen> createState() => _ChatRoomScreenState();
+}
+
+class _ChatRoomScreenState extends State<ChatRoomScreen> {
+  final TextEditingController _messageController = TextEditingController();
+  final ChatService _chatService = ChatService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  void _sendMessage() async {
+    if (_messageController.text.isNotEmpty) {
+      await _chatService.sendMessage(
+        widget.receiverId,
+        _messageController.text,
+      );
+      _messageController.clear();
+    }
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(userName), foregroundColor: Colors.white),
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text(widget.receiverName),
+        foregroundColor: Colors.white,
+      ),
       body: Column(
         children: [
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildMessage(
-                  '¡Hola! Vi tu reporte sobre la mascota en la aplicación.',
-                  isMe: false,
-                ),
-                _buildMessage(
-                  'Hola, sí. ¿Tienes alguna información? Estoy muy preocupado.',
-                  isMe: true,
-                ),
-                _buildMessage(
-                  'Creo que la vi cerca del parque central hace unos 20 minutos. Tomé una foto.',
-                  isMe: false,
-                ),
-              ],
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _chatService.getMessagesStream(widget.receiverId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return const Center(child: Text('Error al cargar mensajes'));
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No hay mensajes aún. Escribe el primero.',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  );
+                }
+
+                final messages = snapshot.data!.docs;
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final data = messages[index].data() as Map<String, dynamic>;
+                    final isMe = data['senderId'] == _auth.currentUser?.uid;
+
+                    return _buildMessage(data['message'] ?? '', isMe: isMe);
+                  },
+                );
+              },
             ),
           ),
           _buildMessageInput(),
@@ -71,6 +127,7 @@ class ChatRoomScreen extends StatelessWidget {
           ),
           Expanded(
             child: TextField(
+              controller: _messageController,
               decoration: InputDecoration(
                 hintText: 'Escribe un mensaje...',
                 border: OutlineInputBorder(
@@ -82,7 +139,7 @@ class ChatRoomScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.send, color: AppColors.primary),
-            onPressed: () {},
+            onPressed: _sendMessage,
           ),
         ],
       ),

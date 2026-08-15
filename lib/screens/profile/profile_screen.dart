@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/app_colors.dart';
 import '../../services/auth_service.dart';
+import 'privacy_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -184,7 +185,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   title: const Text('Privacidad de la cuenta'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PrivacyScreen(),
+                      ),
+                    );
+                  },
                 ),
                 const Divider(),
                 const SizedBox(height: 32),

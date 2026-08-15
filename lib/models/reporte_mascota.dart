@@ -6,7 +6,7 @@ class ReporteMascota {
   String nombre;
   String descripcion;
   List<String> fotosUrl;
-  String? fotoBase64; // <--- Agregamos el campo de tu compañero
+  String? fotoBase64;
   String localidad;
   String estado;
   DateTime fechaCreacion;
@@ -34,7 +34,7 @@ class ReporteMascota {
         'nombre': nombre,
         'descripcion': descripcion,
         'fotosUrl': fotosUrl,
-        'fotoBase64': fotoBase64, // <--- Lo guardamos en Firebase
+        'fotoBase64': fotoBase64,
       },
       'ubicacion': {'localidad': localidad},
       'estado': estado,
@@ -62,7 +62,7 @@ class ReporteMascota {
 
     return ReporteMascota(
       id: documentId,
-      usuarioId: json['usuarioId'] ?? '',
+      usuarioId: json['userId'] ?? '',
       tipoReporte: json['tipoReporte'] ?? 'buscada',
       especie: mascota['especie'] ?? 'Otro',
       nombre: mascota['nombre'] ?? '',
