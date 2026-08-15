@@ -21,7 +21,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _successMessage;
 
   Future<void> _register() async {
-    if (_passwordController.text != _confirmPasswordController.text) {
+    final password = _passwordController.text;
+    final hasMinLength = password.length >= 8;
+    final hasLetter = RegExp(r'[a-zA-Z]').hasMatch(password);
+    final hasNumber = RegExp(r'\d').hasMatch(password);
+    final hasSymbol = RegExp(r'[!@#\$&*~%]').hasMatch(password);
+
+    if (!hasMinLength || !hasLetter || !hasNumber || !hasSymbol) {
+      setState(() {
+        _errorMessage =
+            'La contraseña debe tener al menos 8 caracteres, incluir una letra, un número y un símbolo.';
+      });
+      return;
+    }
+
+    if (password != _confirmPasswordController.text) {
       setState(() {
         _errorMessage = 'Las contraseñas no coinciden.';
       });
@@ -33,6 +47,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _errorMessage = null;
       _successMessage = null;
     });
+
     final error = await _authService.register(
       _emailController.text,
       _passwordController.text,

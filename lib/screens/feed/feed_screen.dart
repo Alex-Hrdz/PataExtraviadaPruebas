@@ -1,14 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
 import '../../utils/app_colors.dart';
 import 'add_report_screen.dart';
-import 'dart:convert';
-import '../profile/profile_screen.dart';
 import 'pet_detail_screen.dart';
 import '../../models/reporte_mascota.dart';
 
-class FeedScreen extends StatelessWidget {
+class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
+
+  @override
+  State<FeedScreen> createState() => _FeedScreenState();
+}
+
+class _FeedScreenState extends State<FeedScreen> {
+  String _filtroSeleccionado = 'Todos';
+  final List<String> _categorias = [
+    'Todos',
+    'Perro',
+    'Gato',
+    'Ave',
+    'Conejo',
+    'Otro',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +34,7 @@ class FeedScreen extends StatelessWidget {
             const Icon(Icons.pets, color: Colors.white),
             const SizedBox(width: 8),
             const Text(
-              'Pets Amber',
+              'Pets Alert',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -37,25 +51,26 @@ class FeedScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // Filtros (Se mantienen visuales por ahora)
           Container(
             color: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
-                children: const [
-                  _FilterChip(label: 'Todos', selected: true),
-                  _FilterChip(label: 'Perro', selected: false),
-                  _FilterChip(label: 'Gato', selected: false),
-                  _FilterChip(label: 'Ave', selected: false),
-                  _FilterChip(label: 'Conejo', selected: false),
-                  _FilterChip(label: 'Otro', selected: false),
-                ],
+                children: _categorias.map((categoria) {
+                  return _FilterChip(
+                    label: categoria,
+                    selected: _filtroSeleccionado == categoria,
+                    onSelected: () {
+                      setState(() {
+                        _filtroSeleccionado = categoria;
+                      });
+                    },
+                  );
+                }).toList(),
               ),
             ),
           ),
-
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -85,7 +100,24 @@ class FeedScreen extends StatelessWidget {
                   );
                 }
 
-                final reportes = snapshot.data!.docs;
+                final todosLosReportes = snapshot.data!.docs;
+                final reportesFiltrados = todosLosReportes.where((doc) {
+                  if (_filtroSeleccionado == 'Todos') return true;
+                  final data = doc.data() as Map<String, dynamic>;
+                  final mascota =
+                      data['mascota'] as Map<String, dynamic>? ?? {};
+                  return mascota['especie'] == _filtroSeleccionado;
+                }).toList();
+
+                if (reportesFiltrados.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'No hay reportes de $_filtroSeleccionado en este momento.',
+                      style: const TextStyle(color: AppColors.textSecondary),
+                    ),
+                  );
+                }
+
                 return GridView.builder(
                   padding: const EdgeInsets.all(8),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -94,18 +126,17 @@ class FeedScreen extends StatelessWidget {
                     mainAxisSpacing: 8,
                     childAspectRatio: 0.75,
                   ),
-                  itemCount: reportes.length,
+                  itemCount: reportesFiltrados.length,
                   itemBuilder: (context, index) {
-                    final data = reportes[index].data() as Map<String, dynamic>;
-
+                    final data =
+                        reportesFiltrados[index].data() as Map<String, dynamic>;
                     final mascota =
                         data['mascota'] as Map<String, dynamic>? ?? {};
                     final ubicacion =
                         data['ubicacion'] as Map<String, dynamic>? ?? {};
-
                     final reporteMascotaObj = ReporteMascota.fromJson(
                       data,
-                      reportes[index].id,
+                      reportesFiltrados[index].id,
                     );
 
                     return GestureDetector(
@@ -136,7 +167,6 @@ class FeedScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          // Navegación conectada hacia nuestra pantalla segura
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AddReportScreen()),
@@ -150,15 +180,16 @@ class FeedScreen extends StatelessWidget {
   }
 }
 
-// =====================================================================
-// WIDGETS AUXILIARES
-// =====================================================================
-
 class _FilterChip extends StatelessWidget {
   final String label;
   final bool selected;
+  final VoidCallback onSelected;
 
-  const _FilterChip({required this.label, required this.selected});
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -167,7 +198,7 @@ class _FilterChip extends StatelessWidget {
       child: FilterChip(
         label: Text(label),
         selected: selected,
-        onSelected: (_) {},
+        onSelected: (_) => onSelected(),
         selectedColor: AppColors.primary.withValues(alpha: 0.2),
         checkmarkColor: AppColors.primary,
         labelStyle: TextStyle(
@@ -224,7 +255,6 @@ class _PetCard extends StatelessWidget {
                     ),
             ),
           ),
-
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 4),
@@ -239,7 +269,6 @@ class _PetCard extends StatelessWidget {
               ),
             ),
           ),
-
           Padding(
             padding: const EdgeInsets.all(8),
             child: Column(

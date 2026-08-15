@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'dart:ui'; // <-- Necesario para el efecto visual de desenfoque
+import 'dart:ui';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/reporte_mascota.dart';
 import '../chat/chat_room_screen.dart';
 
@@ -11,6 +12,9 @@ class PetDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final isMyReport = currentUserId == reporte.usuarioId;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -29,19 +33,18 @@ class PetDetailScreen extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // 1. Imagen de fondo estirada para llenar los huecos
                     Image.memory(
                       base64Decode(reporte.fotoBase64!),
                       fit: BoxFit.cover,
                     ),
-                    // 2. Filtro de desenfoque elegante con un toque oscuro
                     ClipRect(
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0),
-                        child: Container(color: Colors.black.withOpacity(0.4)),
+                        child: Container(
+                          color: Colors.black.withValues(alpha: 0.4),
+                        ),
                       ),
                     ),
-                    // 3. Imagen original completa al frente
                     Image.memory(
                       base64Decode(reporte.fotoBase64!),
                       fit: BoxFit.contain,
@@ -81,7 +84,7 @@ class PetDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 15),
                   const Text(
-                    'Descripción',
+                    'Descripción:',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 5),
@@ -90,24 +93,26 @@ class PetDetailScreen extends StatelessWidget {
                     style: const TextStyle(fontSize: 16),
                   ),
                   const SizedBox(height: 30),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const ChatRoomScreen(
-                              userName: 'Usuario Contacto',
+                  if (!isMyReport)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatRoomScreen(
+                                receiverId: reporte.usuarioId,
+                                receiverName: 'Contacto del reporte',
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.chat),
-                      label: const Text('Contactar por Chat'),
+                          );
+                        },
+                        icon: const Icon(Icons.chat),
+                        label: const Text('Contactar por Chat'),
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
