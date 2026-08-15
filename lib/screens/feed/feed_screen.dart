@@ -4,6 +4,8 @@ import '../../utils/app_colors.dart';
 import 'add_report_screen.dart';
 import 'dart:convert';
 import '../profile/profile_screen.dart';
+import 'pet_detail_screen.dart';
+import '../../models/reporte_mascota.dart';
 
 class FeedScreen extends StatelessWidget {
   const FeedScreen({super.key});
@@ -13,15 +15,6 @@ class FeedScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.person_outline, color: Colors.white),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ProfileScreen()),
-            );
-          },
-        ),
         title: Row(
           children: [
             const Icon(Icons.pets, color: Colors.white),
@@ -110,12 +103,29 @@ class FeedScreen extends StatelessWidget {
                     final ubicacion =
                         data['ubicacion'] as Map<String, dynamic>? ?? {};
 
-                    return _PetCard(
-                      tipo: data['tipoReporte'] ?? 'buscada',
-                      especie: mascota['especie'] ?? 'Desconocida',
-                      localidad: ubicacion['localidad'] ?? 'Sin ubicación',
-                      descripcion: mascota['descripcion'] ?? 'Sin descripción',
-                      fotoBase64: mascota['fotoBase64'],
+                    final reporteMascotaObj = ReporteMascota.fromJson(
+                      data,
+                      reportes[index].id,
+                    );
+
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                PetDetailScreen(reporte: reporteMascotaObj),
+                          ),
+                        );
+                      },
+                      child: _PetCard(
+                        tipo: data['tipoReporte'] ?? 'se busca',
+                        especie: mascota['especie'] ?? 'Desconocida',
+                        localidad: ubicacion['localidad'] ?? 'Sin ubicación',
+                        descripcion:
+                            mascota['descripcion'] ?? 'Sin descripción',
+                        fotoBase64: mascota['fotoBase64'],
+                      ),
                     );
                   },
                 );
@@ -186,7 +196,7 @@ class _PetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isFound = tipo == 'encontrada';
+    final bool isFound = tipo == 'encontrado';
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -220,7 +230,7 @@ class _PetCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 4),
             color: isFound ? AppColors.found : AppColors.lost,
             child: Text(
-              isFound ? 'ENCONTRADA' : 'BUSCADA',
+              isFound ? 'ENCONTRADO' : 'SE BUSCA',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white,

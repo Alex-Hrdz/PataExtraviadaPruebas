@@ -21,8 +21,8 @@ class _AddReportScreenState extends State<AddReportScreen> {
   final _formKey = GlobalKey<FormState>();
   final _localidadController = TextEditingController();
   final _descripcionController = TextEditingController();
-  
-  String _tipoReporte = 'buscada';
+
+  String _tipoReporte = 'se busca';
   String _especie = 'Perro';
   bool _isLoading = false;
 
@@ -40,7 +40,7 @@ class _AddReportScreenState extends State<AddReportScreen> {
       final mascota = data['mascota'] as Map<String, dynamic>? ?? {};
       final ubicacion = data['ubicacion'] as Map<String, dynamic>? ?? {};
 
-      _tipoReporte = data['tipoReporte'] ?? 'buscada';
+      _tipoReporte = data['tipoReporte'] ?? 'se busca';
       _especie = mascota['especie'] ?? 'Perro';
       _localidadController.text = ubicacion['localidad'] ?? '';
       _descripcionController.text = mascota['descripcion'] ?? '';
@@ -64,10 +64,12 @@ class _AddReportScreenState extends State<AddReportScreen> {
 
   Future<void> _enviarReporteSeguro() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     if (_imagenSeleccionada == null && _imagenBase64Existente == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, selecciona una foto de la mascota.')),
+        const SnackBar(
+          content: Text('Por favor, selecciona una foto de la mascota.'),
+        ),
       );
       return;
     }
@@ -93,9 +95,7 @@ class _AddReportScreenState extends State<AddReportScreen> {
           'descripcion': _descripcionController.text.trim(),
           'fotoBase64': base64Image,
         },
-        'ubicacion': {
-          'localidad': _localidadController.text.trim(),
-        },
+        'ubicacion': {'localidad': _localidadController.text.trim()},
         'estado': 'activo',
       };
 
@@ -108,13 +108,19 @@ class _AddReportScreenState extends State<AddReportScreen> {
       } else {
         reporteData['userId'] = currentUser.uid;
         reporteData['fechaPublicacion'] = FieldValue.serverTimestamp();
-        await FirebaseFirestore.instance.collection('publicaciones').add(reporteData);
+        await FirebaseFirestore.instance
+            .collection('publicaciones')
+            .add(reporteData);
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_isEditing ? '✅ Reporte actualizado' : '✅ Reporte publicado con éxito'),
+            content: Text(
+              _isEditing
+                  ? '✅ Reporte actualizado'
+                  : '✅ Reporte publicado con éxito',
+            ),
             backgroundColor: AppColors.found,
           ),
         );
@@ -123,7 +129,10 @@ class _AddReportScreenState extends State<AddReportScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error de seguridad o imagen muy pesada.'), backgroundColor: AppColors.lost),
+          const SnackBar(
+            content: Text('Error de seguridad o imagen muy pesada.'),
+            backgroundColor: AppColors.lost,
+          ),
         );
       }
     } finally {
@@ -144,14 +153,24 @@ class _AddReportScreenState extends State<AddReportScreen> {
           ? Image.network(_imagenSeleccionada!.path, fit: BoxFit.cover)
           : Image.file(File(_imagenSeleccionada!.path), fit: BoxFit.cover);
     } else if (_imagenBase64Existente != null) {
-      return Image.memory(base64Decode(_imagenBase64Existente!), fit: BoxFit.cover);
+      return Image.memory(
+        base64Decode(_imagenBase64Existente!),
+        fit: BoxFit.cover,
+      );
     } else {
       return Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.add_a_photo, size: 48, color: AppColors.primary.withOpacity(0.6)),
+          Icon(
+            Icons.add_a_photo,
+            size: 48,
+            color: AppColors.primary.withOpacity(0.6),
+          ),
           const SizedBox(height: 8),
-          const Text('Toca para subir foto', style: TextStyle(color: AppColors.textSecondary)),
+          const Text(
+            'Toca para subir foto',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
         ],
       );
     }
@@ -162,7 +181,13 @@ class _AddReportScreenState extends State<AddReportScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(_isEditing ? 'Editar Reporte' : 'Crear Reporte', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(
+          _isEditing ? 'Editar Reporte' : 'Crear Reporte',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
@@ -172,26 +197,37 @@ class _AddReportScreenState extends State<AddReportScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Información de la mascota', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+              const Text(
+                'Información de la mascota',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
               const SizedBox(height: 16),
 
               Row(
                 children: [
                   Expanded(
                     child: ChoiceChip(
-                      label: const Center(child: Text('BUSCADA')),
-                      selected: _tipoReporte == 'buscada',
+                      label: const Center(child: Text('SE BUSCA')),
+                      selected: _tipoReporte == 'se busca',
                       selectedColor: AppColors.lost,
-                      onSelected: (val) { if (val) setState(() => _tipoReporte = 'buscada'); },
+                      onSelected: (val) {
+                        if (val) setState(() => _tipoReporte = 'se busca');
+                      },
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: ChoiceChip(
-                      label: const Center(child: Text('ENCONTRADA')),
-                      selected: _tipoReporte == 'encontrada',
+                      label: const Center(child: Text('ENCONTRADO')),
+                      selected: _tipoReporte == 'encontrado',
                       selectedColor: AppColors.found,
-                      onSelected: (val) { if (val) setState(() => _tipoReporte = 'encontrada'); },
+                      onSelected: (val) {
+                        if (val) setState(() => _tipoReporte = 'encontrado');
+                      },
                     ),
                   ),
                 ],
@@ -206,7 +242,9 @@ class _AddReportScreenState extends State<AddReportScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.textSecondary.withOpacity(0.3)),
+                    border: Border.all(
+                      color: AppColors.textSecondary.withOpacity(0.3),
+                    ),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: _buildImagenWidget(),
@@ -215,25 +253,47 @@ class _AddReportScreenState extends State<AddReportScreen> {
               const SizedBox(height: 20),
 
               DropdownButtonFormField<String>(
-                value: _especie,
-                decoration: const InputDecoration(labelText: 'Especie', border: OutlineInputBorder(), fillColor: Colors.white, filled: true),
-                items: ['Perro', 'Gato', 'Ave', 'Conejo', 'Otro'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                onChanged: (val) { if (val != null) setState(() => _especie = val); },
+                initialValue: _especie,
+                decoration: const InputDecoration(
+                  labelText: 'Especie',
+                  border: OutlineInputBorder(),
+                  fillColor: Colors.white,
+                  filled: true,
+                ),
+                items: ['Perro', 'Gato', 'Ave', 'Conejo', 'Otro']
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .toList(),
+                onChanged: (val) {
+                  if (val != null) setState(() => _especie = val);
+                },
               ),
               const SizedBox(height: 16),
 
               TextFormField(
                 controller: _localidadController,
-                decoration: const InputDecoration(labelText: 'Ubicación / Localidad', border: OutlineInputBorder(), prefixIcon: Icon(Icons.location_on, color: AppColors.primary), fillColor: Colors.white, filled: true),
-                validator: (val) => val == null || val.isEmpty ? 'Requerido' : null,
+                decoration: const InputDecoration(
+                  labelText: 'Ubicación / Localidad',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.location_on, color: AppColors.primary),
+                  fillColor: Colors.white,
+                  filled: true,
+                ),
+                validator: (val) =>
+                    val == null || val.isEmpty ? 'Requerido' : null,
               ),
               const SizedBox(height: 16),
 
               TextFormField(
                 controller: _descripcionController,
                 maxLines: 4,
-                decoration: const InputDecoration(labelText: 'Descripción y señas particulares', border: OutlineInputBorder(), fillColor: Colors.white, filled: true),
-                validator: (val) => val == null || val.isEmpty ? 'Requerido' : null,
+                decoration: const InputDecoration(
+                  labelText: 'Descripción y señas particulares',
+                  border: OutlineInputBorder(),
+                  fillColor: Colors.white,
+                  filled: true,
+                ),
+                validator: (val) =>
+                    val == null || val.isEmpty ? 'Requerido' : null,
               ),
               const SizedBox(height: 24),
 
@@ -242,10 +302,18 @@ class _AddReportScreenState extends State<AddReportScreen> {
                 height: 50,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _enviarReporteSeguro,
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                  child: _isLoading 
-                      ? const CircularProgressIndicator(color: Colors.white) 
-                      : Text(_isEditing ? 'Guardar Cambios' : 'Publicar Reporte', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                  ),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text(
+                          _isEditing ? 'Guardar Cambios' : 'Publicar Reporte',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
             ],
