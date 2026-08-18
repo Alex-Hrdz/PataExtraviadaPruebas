@@ -64,8 +64,14 @@ class ChatListScreen extends StatelessWidget {
 
               final lastMessage = chatData['lastMessage'] ?? '';
               final Timestamp? timestamp = chatData['lastMessageTime'];
-              String timeString = '';
 
+              // --- NUEVO: Extraemos los datos del reporte guardados en el chat ---
+              final reportId = chatData['reportId'] ?? 'sin_reporte';
+              final petName = chatData['petName'] ?? 'Mascota';
+              final petFotoBase64 = chatData['petFotoBase64'];
+              // -------------------------------------------------------------------
+
+              String timeString = '';
               if (timestamp != null) {
                 final date = timestamp.toDate();
                 timeString =
@@ -86,6 +92,9 @@ class ChatListScreen extends StatelessWidget {
                       lastMessage,
                       timeString,
                       false,
+                      reportId,
+                      petName,
+                      petFotoBase64,
                     );
                   }
 
@@ -108,6 +117,10 @@ class ChatListScreen extends StatelessWidget {
                     lastMessage,
                     timeString,
                     false,
+                    // --- NUEVO: Mandamos los datos a la tarjeta visual ---
+                    reportId,
+                    petName,
+                    petFotoBase64,
                   );
                 },
               );
@@ -125,6 +138,10 @@ class ChatListScreen extends StatelessWidget {
     String lastMessage,
     String time,
     bool unread,
+    // --- NUEVO: Recibimos los datos en la función constructora ---
+    String reportId,
+    String petName,
+    String? petFotoBase64,
   ) {
     return ListTile(
       leading: CircleAvatar(
@@ -137,11 +154,28 @@ class ChatListScreen extends StatelessWidget {
           ),
         ),
       ),
-      title: Text(
-        name,
-        style: TextStyle(
-          fontWeight: unread ? FontWeight.bold : FontWeight.normal,
+      // --- MODIFICADO: Agregamos el nombre de la mascota al título ---
+      title: RichText(
+        text: TextSpan(
+          text: name,
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: unread ? FontWeight.bold : FontWeight.w600,
+            fontSize: 16,
+          ),
+          children: [
+            TextSpan(
+              text: ' ($petName)',
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.normal,
+                fontSize: 14,
+              ),
+            ),
+          ],
         ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(lastMessage, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: Text(
@@ -152,11 +186,17 @@ class ChatListScreen extends StatelessWidget {
         ),
       ),
       onTap: () {
+        // --- MODIFICADO: Ahora pasamos todos los datos requeridos al chat ---
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                ChatRoomScreen(receiverId: receiverId, receiverName: name),
+            builder: (context) => ChatRoomScreen(
+              receiverId: receiverId,
+              receiverName: name,
+              reportId: reportId,
+              tituloReporte: petName,
+              fotoBase64Reporte: petFotoBase64,
+            ),
           ),
         );
       },

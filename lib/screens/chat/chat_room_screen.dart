@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:convert'; // <-- NUEVO: Para decodificar la imagen en Base64
 import '../../utils/app_colors.dart';
 import '../../services/chat_service.dart';
 
@@ -8,10 +9,18 @@ class ChatRoomScreen extends StatefulWidget {
   final String receiverId;
   final String receiverName;
 
+  // --- NUEVO: Variables para el contexto del reporte ---
+  final String reportId;
+  final String tituloReporte; // Puede ser el nombre o la especie
+  final String? fotoBase64Reporte;
+
   const ChatRoomScreen({
     super.key,
     required this.receiverId,
     required this.receiverName,
+    required this.reportId,
+    required this.tituloReporte,
+    this.fotoBase64Reporte,
   });
 
   @override
@@ -25,9 +34,13 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   void _sendMessage() async {
     if (_messageController.text.isNotEmpty) {
+      // --- MODIFICADO: Mandamos los datos extra al servicio ---
       await _chatService.sendMessage(
         widget.receiverId,
         _messageController.text,
+        reportId: widget.reportId,
+        petName: widget.tituloReporte,
+        petFotoBase64: widget.fotoBase64Reporte,
       );
       _messageController.clear();
     }
@@ -49,9 +62,80 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
       ),
       body: Column(
         children: [
+          // --- NUEVO: BANNER DE CONTEXTO FIJADO ---
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 12.0,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: AppColors.background,
+                  backgroundImage:
+                      widget.fotoBase64Reporte != null &&
+                          widget.fotoBase64Reporte!.isNotEmpty
+                      ? MemoryImage(base64Decode(widget.fotoBase64Reporte!))
+                      : null,
+                  child:
+                      widget.fotoBase64Reporte == null ||
+                          widget.fotoBase64Reporte!.isEmpty
+                      ? const Icon(Icons.pets, color: AppColors.primary)
+                      : null,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Preguntando por:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      Text(
+                        widget.tituloReporte,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                          fontSize: 16,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                // Opcional: Un pequeño ícono visual
+                Icon(
+                  Icons.info_outline,
+                  color: AppColors.primary.withOpacity(0.5),
+                ),
+              ],
+            ),
+          ),
+
+          // ----------------------------------------
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: _chatService.getMessagesStream(widget.receiverId),
+              // --- MODIFICADO: Agregamos el reportId para filtrar la sala correcta ---
+              stream: _chatService.getMessagesStream(
+                widget.receiverId,
+                widget.reportId,
+              ),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(

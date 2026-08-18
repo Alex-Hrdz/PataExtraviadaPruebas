@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // <-- NUEVO: Importamos FirebaseAuth
 import '../../services/auth_service.dart';
 import '../../utils/app_colors.dart';
 
@@ -54,6 +55,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _nameController.text,
     );
 
+    // --- NUEVO: CIERRE DE SESIÓN FORZADO ---
+    if (error == null) {
+      // Firebase inició sesión al crear la cuenta, la cerramos inmediatamente
+      await FirebaseAuth.instance.signOut();
+    }
+    // --------------------------------------
+
     setState(() {
       _isLoading = false;
       if (error != null) {
@@ -63,6 +71,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
             'Cuenta creada. Revisa tu correo para verificar tu cuenta.';
       }
     });
+
+    // --- NUEVO: REDIRECCIÓN AUTOMÁTICA ---
+    if (error == null && mounted) {
+      // Esperamos 2 segundos para que el usuario lea el mensaje verde
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) {
+          Navigator.pop(context); // Regresa a la pantalla de Login
+        }
+      });
+    }
+    // -------------------------------------
   }
 
   @override
@@ -148,6 +167,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Text(
                   _successMessage!,
                   style: const TextStyle(color: Colors.green),
+                  textAlign: TextAlign.center,
                 ),
               const SizedBox(height: 24),
               SizedBox(

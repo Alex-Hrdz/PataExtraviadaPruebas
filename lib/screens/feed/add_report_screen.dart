@@ -21,6 +21,8 @@ class _AddReportScreenState extends State<AddReportScreen> {
   final _formKey = GlobalKey<FormState>();
   final _localidadController = TextEditingController();
   final _descripcionController = TextEditingController();
+  final _nombreController =
+      TextEditingController(); // <-- NUEVO: Controlador para el nombre
 
   String _tipoReporte = 'se busca';
   String _especie = 'Perro';
@@ -42,6 +44,8 @@ class _AddReportScreenState extends State<AddReportScreen> {
 
       _tipoReporte = data['tipoReporte'] ?? 'se busca';
       _especie = mascota['especie'] ?? 'Perro';
+      _nombreController.text =
+          mascota['nombre'] ?? ''; // <-- NUEVO: Cargar el nombre si existe
       _localidadController.text = ubicacion['localidad'] ?? '';
       _descripcionController.text = mascota['descripcion'] ?? '';
       _imagenBase64Existente = mascota['fotoBase64'];
@@ -91,6 +95,8 @@ class _AddReportScreenState extends State<AddReportScreen> {
       final Map<String, dynamic> reporteData = {
         'tipoReporte': _tipoReporte,
         'mascota': {
+          'nombre': _nombreController.text
+              .trim(), // <-- NUEVO: Guardar el nombre en Firebase
           'especie': _especie,
           'descripcion': _descripcionController.text.trim(),
           'fotoBase64': base64Image,
@@ -142,6 +148,7 @@ class _AddReportScreenState extends State<AddReportScreen> {
 
   @override
   void dispose() {
+    _nombreController.dispose(); // <-- NUEVO: Limpiar memoria
     _localidadController.dispose();
     _descripcionController.dispose();
     super.dispose();
@@ -252,6 +259,23 @@ class _AddReportScreenState extends State<AddReportScreen> {
               ),
               const SizedBox(height: 20),
 
+              // --- NUEVO: CAMPO DE NOMBRE ---
+              TextFormField(
+                controller: _nombreController,
+                decoration: InputDecoration(
+                  labelText: _tipoReporte == 'se busca'
+                      ? 'Nombre de la mascota (Opcional)'
+                      : 'Nombre en la placa (Si aplica)',
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.pets, color: AppColors.primary),
+                  fillColor: Colors.white,
+                  filled: true,
+                ),
+                // No lleva validator porque es opcional en ambos casos
+              ),
+              const SizedBox(height: 16),
+
+              // ------------------------------
               DropdownButtonFormField<String>(
                 initialValue: _especie,
                 decoration: const InputDecoration(

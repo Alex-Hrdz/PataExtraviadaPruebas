@@ -15,6 +15,11 @@ class FeedScreen extends StatefulWidget {
 
 class _FeedScreenState extends State<FeedScreen> {
   String _filtroSeleccionado = 'Todos';
+
+  bool _isSearching = false;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
   final List<String> _categorias = [
     'Todos',
     'Perro',
@@ -25,156 +30,262 @@ class _FeedScreenState extends State<FeedScreen> {
   ];
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Row(
-          children: [
-            const Icon(Icons.pets, color: Colors.white),
-            const SizedBox(width: 8),
-            const Text(
-              'Pets Alert',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _categorias.map((categoria) {
-                  return _FilterChip(
-                    label: categoria,
-                    selected: _filtroSeleccionado == categoria,
-                    onSelected: () {
-                      setState(() {
-                        _filtroSeleccionado = categoria;
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-            ),
-          ),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('publicaciones')
-                  .orderBy('fechaPublicacion', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
-                  );
-                }
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
-                if (snapshot.hasError) {
-                  return const Center(
-                    child: Text('Error al cargar las publicaciones.'),
-                  );
-                }
-
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'No hay reportes activos.\n¡Sé el primero en publicar!',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                  );
-                }
-
-                final todosLosReportes = snapshot.data!.docs;
-                final reportesFiltrados = todosLosReportes.where((doc) {
-                  if (_filtroSeleccionado == 'Todos') return true;
-                  final data = doc.data() as Map<String, dynamic>;
-                  final mascota =
-                      data['mascota'] as Map<String, dynamic>? ?? {};
-                  return mascota['especie'] == _filtroSeleccionado;
-                }).toList();
-
-                if (reportesFiltrados.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'No hay reportes de $_filtroSeleccionado en este momento.',
-                      style: const TextStyle(color: AppColors.textSecondary),
-                    ),
-                  );
-                }
-
-                return GridView.builder(
-                  padding: const EdgeInsets.all(8),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                    childAspectRatio: 0.75,
-                  ),
-                  itemCount: reportesFiltrados.length,
-                  itemBuilder: (context, index) {
-                    final data =
-                        reportesFiltrados[index].data() as Map<String, dynamic>;
-                    final mascota =
-                        data['mascota'] as Map<String, dynamic>? ?? {};
-                    final ubicacion =
-                        data['ubicacion'] as Map<String, dynamic>? ?? {};
-                    final reporteMascotaObj = ReporteMascota.fromJson(
-                      data,
-                      reportesFiltrados[index].id,
-                    );
-
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                PetDetailScreen(reporte: reporteMascotaObj),
-                          ),
-                        );
-                      },
-                      child: _PetCard(
-                        tipo: data['tipoReporte'] ?? 'se busca',
-                        especie: mascota['especie'] ?? 'Desconocida',
-                        localidad: ubicacion['localidad'] ?? 'Sin ubicación',
-                        descripcion:
-                            mascota['descripcion'] ?? 'Sin descripción',
-                        fotoBase64: mascota['fotoBase64'],
-                      ),
-                    );
+  // --- NUEVO: Extraemos la construcción del feed para reutilizarla en cada pestaña ---
+  Widget _buildTabContent(String tipoReporteTab) {
+    return Column(
+      children: [
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _categorias.map((categoria) {
+                return _FilterChip(
+                  label: categoria,
+                  selected: _filtroSeleccionado == categoria,
+                  onSelected: () {
+                    setState(() {
+                      _filtroSeleccionado = categoria;
+                    });
                   },
                 );
-              },
+              }).toList(),
             ),
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddReportScreen()),
-          );
-        },
-        backgroundColor: AppColors.primary,
-        icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text('Reportar', style: TextStyle(color: Colors.white)),
+        ),
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('publicaciones')
+                .orderBy('fechaPublicacion', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return const Center(
+                  child: Text('Error al cargar las publicaciones.'),
+                );
+              }
+
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'No hay reportes activos.\n¡Sé el primero en publicar!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                );
+              }
+
+              final todosLosReportes = snapshot.data!.docs;
+
+              final reportesFiltrados = todosLosReportes.where((doc) {
+                final data = (doc.data() as Map<String, dynamic>?) ?? {};
+
+                // 1. FILTRO DE PESTAÑA: Separar "Se busca" de "Encontrado"
+                final tipoReporteBD =
+                    data['tipoReporte'] as String? ?? 'se busca';
+                if (tipoReporteBD != tipoReporteTab) {
+                  return false;
+                }
+
+                final mascota =
+                    (data['mascota'] as Map<String, dynamic>?) ?? {};
+                final ubicacion =
+                    (data['ubicacion'] as Map<String, dynamic>?) ?? {};
+                final especieData = mascota['especie'] as String?;
+
+                // 2. Filtro de Categoría (Perro, Gato, etc.)
+                if (_filtroSeleccionado != 'Todos' &&
+                    especieData != _filtroSeleccionado) {
+                  return false;
+                }
+
+                // 3. Filtro de Búsqueda de texto
+                if (_searchQuery.isNotEmpty) {
+                  final nombre = (mascota['nombre'] as String? ?? '')
+                      .toLowerCase();
+                  final descripcion = (mascota['descripcion'] as String? ?? '')
+                      .toLowerCase();
+                  final localidad = (ubicacion['localidad'] as String? ?? '')
+                      .toLowerCase();
+                  final especie = (especieData ?? '').toLowerCase();
+
+                  if (!nombre.contains(_searchQuery) &&
+                      !descripcion.contains(_searchQuery) &&
+                      !localidad.contains(_searchQuery) &&
+                      !especie.contains(_searchQuery)) {
+                    return false;
+                  }
+                }
+
+                return true;
+              }).toList();
+
+              if (reportesFiltrados.isEmpty) {
+                return Center(
+                  child: Text(
+                    _searchQuery.isNotEmpty
+                        ? 'No se encontraron resultados para "$_searchQuery".'
+                        : 'No hay reportes en esta sección.',
+                    style: const TextStyle(color: AppColors.textSecondary),
+                    textAlign: TextAlign.center,
+                  ),
+                );
+              }
+
+              return GridView.builder(
+                padding: const EdgeInsets.all(8),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 0.75,
+                ),
+                itemCount: reportesFiltrados.length,
+                itemBuilder: (context, index) {
+                  final data =
+                      (reportesFiltrados[index].data()
+                          as Map<String, dynamic>?) ??
+                      {};
+                  final mascota =
+                      (data['mascota'] as Map<String, dynamic>?) ?? {};
+                  final ubicacion =
+                      (data['ubicacion'] as Map<String, dynamic>?) ?? {};
+
+                  final reporteMascotaObj = ReporteMascota.fromJson(
+                    data,
+                    reportesFiltrados[index].id,
+                  );
+
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              PetDetailScreen(reporte: reporteMascotaObj),
+                        ),
+                      );
+                    },
+                    child: _PetCard(
+                      tipo: data['tipoReporte'] as String? ?? 'se busca',
+                      nombre: mascota['nombre'] as String?,
+                      especie: mascota['especie'] as String? ?? 'Desconocida',
+                      localidad:
+                          ubicacion['localidad'] as String? ?? 'Sin ubicación',
+                      descripcion:
+                          mascota['descripcion'] as String? ??
+                          'Sin descripción',
+                      fotoBase64: mascota['fotoBase64'] as String?,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // --- NUEVO: DefaultTabController para manejar las pestañas automáticamente ---
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: _isSearching
+              ? TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    hintText: 'Buscar raza, color, colonia...',
+                    hintStyle: TextStyle(color: Colors.white70),
+                    border: InputBorder.none,
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value.toLowerCase();
+                    });
+                  },
+                )
+              : Row(
+                  children: [
+                    const Icon(Icons.pets, color: Colors.white),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Pets Alert',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+          actions: [
+            IconButton(
+              icon: Icon(
+                _isSearching ? Icons.close : Icons.search,
+                color: Colors.white,
+              ),
+              onPressed: () {
+                setState(() {
+                  if (_isSearching) {
+                    _isSearching = false;
+                    _searchController.clear();
+                    _searchQuery = '';
+                  } else {
+                    _isSearching = true;
+                  }
+                });
+              },
+            ),
+          ],
+          // --- NUEVO: La barra de pestañas (TabBar) ---
+          bottom: const TabBar(
+            indicatorColor: Colors.white,
+            indicatorWeight: 3,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            tabs: [
+              Tab(text: 'SE BUSCA'),
+              Tab(text: 'ENCONTRADOS'),
+            ],
+          ),
+        ),
+        // --- NUEVO: TabBarView conecta el contenido con la pestaña seleccionada ---
+        body: TabBarView(
+          children: [
+            _buildTabContent('se busca'),
+            _buildTabContent('encontrado'),
+          ],
+        ),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddReportScreen()),
+            );
+          },
+          backgroundColor: AppColors.primary,
+          icon: const Icon(Icons.add, color: Colors.white),
+          label: const Text('Reportar', style: TextStyle(color: Colors.white)),
+        ),
       ),
     );
   }
@@ -212,6 +323,7 @@ class _FilterChip extends StatelessWidget {
 
 class _PetCard extends StatelessWidget {
   final String tipo;
+  final String? nombre;
   final String especie;
   final String localidad;
   final String descripcion;
@@ -219,6 +331,7 @@ class _PetCard extends StatelessWidget {
 
   const _PetCard({
     required this.tipo,
+    this.nombre,
     required this.especie,
     required this.localidad,
     required this.descripcion,
@@ -228,6 +341,7 @@ class _PetCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isFound = tipo == 'encontrado';
+    final bool hasNombre = nombre != null && nombre!.trim().isNotEmpty;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -274,14 +388,46 @@ class _PetCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  especie,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
+                if (hasNombre) ...[
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.pets,
+                        size: 12,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          nombre!,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                            fontSize: 15,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                  Text(
+                    especie,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ] else ...[
+                  Text(
+                    especie,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 2),
                 Text(
                   localidad,

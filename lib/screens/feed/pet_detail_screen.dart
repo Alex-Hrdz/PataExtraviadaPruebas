@@ -105,6 +105,13 @@ class PetDetailScreen extends StatelessWidget {
                               builder: (context) => ChatRoomScreen(
                                 receiverId: reporte.usuarioId,
                                 receiverName: 'Contacto del reporte',
+                                // --- NUEVO: Pasamos los datos del reporte al chat ---
+                                reportId: reporte.id ?? 'sin_id',
+                                tituloReporte: reporte.nombre.isNotEmpty
+                                    ? reporte.nombre
+                                    : reporte.especie,
+                                fotoBase64Reporte: reporte.fotoBase64,
+                                // ----------------------------------------------------
                               ),
                             ),
                           );
